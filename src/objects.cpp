@@ -661,7 +661,6 @@ int data::createJS(std::string dir)
 		f << "  polarPlot.setMap(map);\n}\n\ngoogle.maps.event.addDomListener(window, 'load', initialize);";
 		
 		f.close();
-		return 0;
 		
 	}
 	else
@@ -711,10 +710,14 @@ int data::createJS(std::string dir)
 			f << "function changeRadius() {\n  heatmap.set('radius', heatmap.get('radius') ? null : 20);\n}\n\nfunction changeOpacity() {\n  heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);\n";
 			f << "}\n\ngoogle.maps.event.addDomListener(window, 'load', initialize);";
 		}
+		
+		f.close();
 	}
 	else
 	{
 		fprintf(stderr, "ERROR: Unable to open output file!\n");
 		return 1;
 	}
+	
+	return 0;
 }
