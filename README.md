@@ -46,4 +46,4 @@ dumpStats -c ./JavaScript myStats.out
 ```
 
 ## Credits
-dumpStats was written by Marcel Kebisek (marcel.kebisek@gmail.com) and is released under GNU GPL License v3.
+DumpStats was written by Marcel Kebisek (marcel.kebisek@gmail.com) and is released under GNU GPL License v3.
