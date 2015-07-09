@@ -702,14 +702,16 @@ int data::createJS(std::string dir)
 			heatMapIter--;
 		}
 			
-		f << "];\n\nfunction initialize() {\n  var mapOptions = {\n    zoom: 13,\n    center: new google.maps.LatLng(" << ref.lat << ", " << ref.lon << "),\n    mapTypeId: google.maps.MapTypeId.SATELLITE\n";
+		f << "];\n\nfunction initialize() {\n  var mapOptions = {\n    zoom: 9,\n    center: new google.maps.LatLng(" << ref.lat << ", " << ref.lon << "),\n    mapTypeId: google.maps.MapTypeId.SATELLITE\n";
 		f << "  };\n\n  map = new google.maps.Map(document.getElementById('map-canvas'),\n      mapOptions);\n\n  var pointArray = new google.maps.MVCArray(heatMapData);\n\n";
-		f << "  heatmap = new google.maps.visualization.HeatmapLayer({\n    data: pointArray\n  });\n\n  heatmap.setMap(map);\n}\n\nfunction toggleHeatmap() {\n  heatmap.setMap(heatmap.getMap() ? null : map);\n}\n\n";
+		f << "  heatmap = new google.maps.visualization.HeatmapLayer({\n    data: pointArray\n  });\n\n  var image = new google.maps.MarkerImage('http://maps.google.com/mapfiles/kml/pal4/icon57.png', null, new google.maps.Point(0,0), new google.maps.Point(16,16));";
+		f << "  var myLatLng = new google.maps.LatLng(48.9939, 18.0979);  var beachMarker = new google.maps.Marker({\n      position: myLatLng,\n      map: map,\n      icon: image\n";
+		f << "  });heatmap.setMap(map);\n}\n\nfunction toggleHeatmap() {\n  heatmap.setMap(heatmap.getMap() ? null : map);\n}\n\n";
 		f << "function changeGradient() {\n  var gradient = [\n    'rgba(0, 255, 255, 0)',\n    'rgba(0, 255, 255, 1)',\n    'rgba(0, 191, 255, 1)',\n    'rgba(0, 127, 255, 1)',\n";
 		f << "    'rgba(0, 63, 255, 1)',\n    'rgba(0, 0, 255, 1)',\n    'rgba(0, 0, 223, 1)',\n    'rgba(0, 0, 191, 1)',\n    'rgba(0, 0, 159, 1)',\n    'rgba(0, 0, 127, 1)',\n";
 		f << "    'rgba(63, 0, 91, 1)',\n    'rgba(127, 0, 63, 1)',\n    'rgba(191, 0, 31, 1)',\n    'rgba(255, 0, 0, 1)'\n  ]\n  heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);\n}\n\n";
 		f << "function changeRadius() {\n  heatmap.set('radius', heatmap.get('radius') ? null : 20);\n}\n\nfunction changeOpacity() {\n  heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);\n";
-		f << "}\n\ngoogle.maps.event.addDomListener(window, 'load', initialize);";
+		f << "}\n\nfunction mtypeHybrid() {\n	map.setMapTypeId(google.maps.MapTypeId.HYBRID);\n}\n\nfunction mtypeSat() {\n	map.setMapTypeId(google.maps.MapTypeId.SATELLITE);\n}google.maps.event.addDomListener(window, 'load', initialize);";
 		
 		f.close();
 	}
