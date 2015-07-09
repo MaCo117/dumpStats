@@ -1,3 +1,23 @@
+/* DumpStats - dump1090 feed statistical data collector
+ * Copyright (C) 2015 Marcel Kebisek
+ * Contact: marcel.kebisek@gmail.com
+ * 
+ * This file is part of DumpStats.
+ * 
+ * DumpStats is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * DumpStats is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with DumpStats. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -20,26 +40,6 @@
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
-/* DumpStats - dump1090 feed statistical data collector
- * Copyright (C) 2015 Marcel Kebisek
- * Contact: marcel.kebisek@gmail.com
- * 
- * This file is part of DumpStats.
- * 
- * DumpStats is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * DumpStats is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with DumpStats. If not, see <http://www.gnu.org/licenses/>.
- */
-
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
 #define ANSI_COLOR_BLUE    "\x1b[34m"
 #define ANSI_COLOR_MAGENTA "\x1b[35m"
