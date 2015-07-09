@@ -100,7 +100,6 @@ double toNm(double km);
 
 class data
 {
-	public:
 	std::time_t timestamp;	// last change of file
 	std::time_t uptime;		// time of program launch
 	
@@ -125,7 +124,7 @@ class data
 	// In case of invalid input file, print stderr message and exit program
 	void formatError();
 	
-	
+	public:
 		// Constructor
 		// Initialize object from external file
 		data(std::string path);
@@ -150,4 +149,8 @@ class data
 		
 		// Interface to get uptime value from object instance
 		std::time_t getUptime();
+		
+		// Function creates Javascript code using GoogleMaps API to display data
+		int createJS(std::string dir);
+		
 };

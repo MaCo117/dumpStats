@@ -35,9 +35,11 @@ void f_sigint_handler(int s)
 // Print help message
 void printHelp()
 {
-	std::cout << "\nusage: dumpStats [-d] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
+	std::cout << "\ncollect mode usage: dumpStats [-d] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
 	std::cout << "optional arguments:\n -h    show this message and exit\n -d    display incoming messages (verbose)\n -p/-m specify initial receiver position at scratch start\n";
-	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n";
+	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n\n\n";
+	std::cout << "convert mode usage: dumpStats -c [OUT_DIR] FILE_PATH\n\n";
+	std::cout << "OUT_DIR - is a directory where JS files will be stored (current directory by default)\nFILE_PATH is path to load file\n";
 	return;
 }
 
@@ -49,11 +51,13 @@ int main(int argc, char **argv)
 	// Argument parsing
 	bool scratch = false;
 	bool load = false;
+	bool convert = false;
 	double refLat;
 	double refLon;
 	std::string filePath;
 	char *hostname;
 	char *portStr;
+	std::string jsDir;
 	
 	bool dFlag = false;
 	bool pFlag = false;
@@ -62,17 +66,22 @@ int main(int argc, char **argv)
 	char *mVal = nullptr;
 	bool fFlag = false;
 	char *fVal = nullptr;
+	bool cFlag = false;
 	
 	int optIndex;
 	int c;
 	
-	while ((c = getopt(argc, argv, "hdp:m:f:")) != -1)
+	while ((c = getopt(argc, argv, "hcdp:m:f:")) != -1)
 	{
 		switch(c)
 		{
 			case 'h':
 				printHelp();
 				exit(1);
+				
+			case 'c':
+				cFlag = true;
+				break;
 				
 			case 'd':
 				dFlag = true;
@@ -116,59 +125,94 @@ int main(int argc, char **argv)
 		nonOptions.push_back(argv[optIndex]);
 	}
 	
-	if (pFlag || mFlag)
+	if (cFlag)
 	{
-		if ((pFlag && !mFlag) || (!pFlag && mFlag))
+		if (pFlag || mFlag || fFlag || dFlag)
 		{
-			fprintf(stderr, "Invalid argument usage! Another position coordinate is required, if starting from scratch.\n");
+			fprintf(stderr, "Invalid argument usage! Convert mode does not accept other options.\n");
 			exit(1);
 		}
 		
-		if (pFlag && mFlag)
+		if (nonOptions.size() == 2)
 		{
-			scratch = true;
-			refLat = atof(pVal);
-			refLon = atof(mVal);
+			jsDir = std::string(nonOptions[0]);
+			filePath = std::string(nonOptions[1]);
+			convert = true;
 		}
-		
-		if (fFlag)
+		else if (nonOptions.size() == 1)
 		{
-			filePath = std::string(fVal);
+			jsDir = std::string("./");
+			filePath = std::string(nonOptions[0]);
+			convert = true;
 		}
 		else
 		{
-			filePath = std::string("./stats.out");
+			fprintf(stderr, "Invalid number of values for convert mode!\n");
+			exit(1);
 		}
 	}
 	else
 	{
-		if (!fFlag)
+		if (pFlag || mFlag)
 		{
-			fprintf(stderr, "Invalid argument usage! Load file or initial position is required.\n");
+			if ((pFlag && !mFlag) || (!pFlag && mFlag))
+			{
+				fprintf(stderr, "Invalid argument usage! Another position coordinate is required, if starting from scratch.\n");
+				exit(1);
+			}
+			
+			if (pFlag && mFlag)
+			{
+				scratch = true;
+				refLat = atof(pVal);
+				refLon = atof(mVal);
+			}
+			
+			if (fFlag)
+			{
+				filePath = std::string(fVal);
+			}
+			else
+			{
+				filePath = std::string("./stats.out");
+			}
+		}
+		else
+		{
+			if (!fFlag)
+			{
+				fprintf(stderr, "Invalid argument usage! Load file or initial position is required.\n");
+				exit(1);
+			}
+			else
+			{
+				load = true;
+				filePath = std::string(fVal);
+			}
+		}
+		
+		if (nonOptions.size() < 2)
+		{
+			fprintf(stderr, "Missing arguments! Source IP (127.0.0.1 if on localhost) and port are required!\n");
 			exit(1);
 		}
 		else
 		{
-			load = true;
-			filePath = std::string(fVal);
+			hostname = nonOptions[0];
+			portStr = nonOptions[1];
 		}
 	}
 	
-	if (nonOptions.size() < 2)
-	{
-		fprintf(stderr, "Missing arguments! Source IP (127.0.0.1 if on localhost) and port are required!\n");
-		exit(1);
-	}
-	else
-	{
-		hostname = nonOptions[0];
-		portStr = nonOptions[1];
-	}
-		
-		
 	
-	
+	// Convert mode
+	if (convert)
+	{
+		data stats = data(filePath);
 		
+		stats.createJS(jsDir);
+		
+		return 0;
+	}		
 	
 	
 	

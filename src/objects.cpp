@@ -298,6 +298,7 @@ data::data()
 }
 
 
+
 /**
  * Function returns uptime value from object instance.
  * @return uptime
@@ -618,4 +619,54 @@ int data::processMessage(std::string message)
 			break;
 	}
 	return 0;
+}
+
+
+
+/**
+ * Function converts instance data and produces files with
+ * Javascript code using GoogleMaps API to display collected data.
+ * @param dir - directory to create JS files
+ * @return zero if success, nonzero otherwise
+ */
+int data::createJS(std::string dir)
+{
+	// Create rangePlot
+	std::ofstream f;
+	std::string fpath = dir + "/polarPlot.js";
+	f.open(fpath);
+	if (f.is_open())
+	{
+		f << "function initialize() {\n  var mapOptions = {\n    zoom: 5,\n    center: new google.maps.LatLng(";
+		f << ref.lat << ", " << ref.lon << "),\n    mapTypeId: google.maps.MapTypeId.TERRAIN\n  };\n\n  var polarPlot;\n\n  var map = new google.maps.Map(document.getElementById('map-canvas'),\n      mapOptions);";
+		f << "var triangleCoords = [\n";
+		
+		for (int i = 0; i < 360; i++)
+		{
+			tCoords p = polarRange[i];
+			f << "    new google.maps.LatLng(" << p.lat << ", " << p.lon << ")";
+			if (i != 359)
+			{
+				f << ",\n";
+			}
+			else
+			{
+				f << "\n";
+			}
+		}
+		f << "  ];\n\n  polarPlot = new google.maps.Polygon({\n    paths: triangleCoords,\n    strokeColor: '#FF0000',\n    strokeOpacity: 0.8,\n    strokeWeight: 2,\n    fillColor: '#FF0000',\n    fillOpacity: 0.35\n  });\n\n";
+		f << "  var image = new google.maps.MarkerImage('http://maps.google.com/mapfiles/kml/pal4/icon57.png', null, new google.maps.Point(0,0), new google.maps.Point(16,16));";
+		f << "  var myLatLng = new google.maps.LatLng(48.9939, 18.0979);";
+		f << "  var beachMarker = new google.maps.Marker({\n      position: myLatLng,\n      map: map,\n      icon: image\n  });\n\n";
+		f << "  polarPlot.setMap(map);\n}\n\ngoogle.maps.event.addDomListener(window, 'load', initialize);";
+		
+		f.close();
+		return 0;
+		
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: Unable to open output file!\n");
+		return 1;
+	}
 }
