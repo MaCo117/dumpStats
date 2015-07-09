@@ -1,0 +1,621 @@
+/* DumpStats - dump1090 feed statistical data collector
+ * Copyright (C) 2015 Marcel Kebisek
+ * Contact: marcel.kebisek@gmail.com
+ * 
+ * This file is part of DumpStats.
+ * 
+ * DumpStats is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * DumpStats is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with DumpStats. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "objects.H"
+
+/**
+ * In case of invalid input file, print stderr message and exit program.
+ */
+void data::formatError()
+{
+	fprintf(stderr, "ERROR: Invalid format of init file.\n");
+	exit(1);
+}
+
+
+
+/**
+ * Function converts decimal degree value into decimal radians value
+ * @param degrees - degree value to be converted in double
+ * @return converted radians value in double
+ */
+double toRadians(double degrees)
+{
+	return (degrees * (M_PI / 180.0));
+}
+
+
+
+/**
+ * Function converts redians decimal value into degrees decimal value.
+ * @param radians - value in radians to be converted
+ * @return converted degrees value
+ */
+double toDegrees(double radians)
+{
+	return (radians * (180.0 / M_PI));
+}
+
+
+
+/**
+ * Function converts distance in nautical miles into kilometers.
+ * @param nm - distance in nautical miles
+ * @return distance in km
+ */
+double toKm(double nm)
+{
+	return (nm / 0.53996);
+}
+
+
+/**
+ * Function converts distance in kilometers into nautical miles.
+ * @param km - distance in kilometers
+ * @return distance in nm
+ */
+double toNm(double km)
+{
+	return (km * 0.53996);
+}
+
+
+
+
+/**
+ * Function calculates distance between two spherical coordinates using haversine formula.
+ * @param first - first coordinates in tCoords structure
+ * @param second - second coordinates in tCoords structure
+ * @return distance in km between two provided coordinates (double)
+ */
+double getDistance(tCoords first, tCoords second)
+{	
+	double deltaLat = toRadians(first.lat) - toRadians(second.lat);
+	double deltaLon = toRadians(first.lon) - toRadians(second.lon);
+	
+	double aHarv = pow(sin(deltaLat / 2.0), 2.0) + cos(toRadians(first.lat)) * cos(toRadians(second.lat)) * pow(sin(deltaLon / 2), 2);
+	double cHarv = 2 * atan2(sqrt(aHarv), sqrt(1.0-aHarv));
+	
+	return EARTH_RADIUS * cHarv;
+}
+
+	
+
+/**
+ * Function calculates forward azimuth (initial bearing) from first provided coordinates to second.
+ * @param first - initial coordinates in tCoords structure
+ * @param second - final coordinates in tCoords structure
+ * @return initial bearing from first to second position in decimal degrees
+ */
+double getBearing(tCoords first, tCoords second)
+{
+	double deltaLon = toRadians(second.lon) - toRadians(first.lon);
+	
+	double dPhi = log(tan(toRadians(second.lat) / 2.0 + M_PI / 4.0) / tan(toRadians(first.lat) / 2.0 + M_PI / 4.0));
+	
+	if (abs(deltaLon) > M_PI)
+	{
+		if (deltaLon > 0.0)
+		{
+			deltaLon = -(2.0 * M_PI - deltaLon);
+		}
+		else
+		{
+			deltaLon = (2.0 * M_PI - deltaLon);
+		}
+	}
+	
+	return (std::fmod((toDegrees(atan2(deltaLon, dPhi)) + 360.0), 360.0));
+}
+
+
+
+
+/**
+ * Function splits string into vector of substrings originally separated by delimiter
+ * @param str - string to be splitted
+ * @param delimiter - character used as split delimiter
+ * @return vector of substrings
+ */
+std::vector<std::string> split(std::string str, char delimiter)
+{
+	std::vector<std::string> internal;
+	
+	// Turn the string into a stream.
+	std::stringstream ss(str); 
+	std::string tok;
+	
+	while(getline(ss, tok, delimiter))
+	{
+		internal.push_back(tok);
+	}
+	
+	return internal;
+}
+
+
+
+/**
+ * Constructor.
+ * Initialize object from external file
+ * @param path - std::string containing path to initialization file.
+ */
+data::data(std::string path)
+{
+	std::ifstream f(path);
+	if (!f)		// input stream creation failed
+	{
+		fprintf(stderr, "ERROR: Unable to open init file.\n");
+		exit(1);
+	}
+	
+	std::string line;
+	
+	uptime = std::time(nullptr);
+	
+	// Load timestamp (line 1)
+	if (! std::getline(f, line))
+	{
+		formatError();
+	}
+
+	timestamp = std::stoi(line);
+	
+	
+	// Load reference lat (line 2)
+	if (! std::getline(f, line))
+	{
+		formatError();
+	}
+	
+	ref.lat = std::stod(line);
+	
+	
+	// Load reference lon (line 3)
+	if (! std::getline(f, line))
+	{
+		formatError();
+	}
+	
+	ref.lon = std::stod(line);
+	
+	
+	// Load polar range plot values (lines 4-363)
+	for (int i = 0; i < 360; i++)
+	{
+		if (! std::getline(f, line))
+		{
+			formatError();
+		}
+		std::vector<std::string> vec = split(line, '|');
+		tCoords newPos;
+		newPos.lat = std::stod (vec[0]);
+		newPos.lon = std::stod (vec[1]);
+		
+		polarRange.push_back(newPos);
+	}
+	
+	// Load delimiting blank line
+	if (! std::getline(f, line))
+	{
+		formatError();
+	}
+	
+	// Load heatMap weighted points
+	while (std::getline(f, line))
+	{
+		if (line == "")
+		{
+			break;
+		}
+		std::vector<std::string> vec = split(line, '|');
+		int index = std::stoi (vec[0]);
+		int weight = std::stoi (vec[1]);
+		heatMap[index] = weight;
+	}
+	
+	// Load companyPlot string-keyed map
+	while (std::getline(f, line))
+	{
+		if (line == "")
+		{
+			break;
+		}
+		std::string key = line.substr(0,3);		// First 3 characters
+		int val = std::stoi(line.substr(4));
+		companyPlot[key] = val;
+	}
+	
+	// Trailing $ check
+	if (! std::getline(f, line))
+	{
+		formatError();
+	}
+	if (line != "$")
+	{
+		formatError();
+	}
+	else
+	{
+		// Init successful
+		fprintf(stdout, "Loading successfull.\n");
+		return;
+	}
+}
+
+
+
+/**
+ * Constructor.
+ * If init file is not provided, generate object from scratch requiring reference position.
+ * @param lat - decimal degree coordinate of reference position
+ * @param lon - decimal degree coordinate of reference position
+ */
+data::data(double lat, double lon)
+{
+	// Reference position
+	ref.lat = lat;
+	ref.lon = lon;
+	
+	uptime = std::time(nullptr);
+	
+	// Fill 359 polarPlot values with reference position, since no other data is available yet
+	for (int i = 0; i < 360; i++)
+	{
+		tCoords newPos;
+		newPos.lat = ref.lat;
+		newPos.lon = ref.lon;
+		
+		polarRange.push_back(newPos);
+	}
+	return;
+}
+
+
+/**
+ * Empty constructor.
+ */
+data::data()
+{
+	return;
+}
+
+
+/**
+ * Function returns uptime value from object instance.
+ * @return uptime
+ */
+std::time_t data::getUptime()
+{
+	return uptime;
+}
+
+
+
+
+/**
+ * Function clears from flightBuffer entries older than 30 minutes.
+ */
+int data::flushFBuffer()
+{
+	std::time_t now = std::time(nullptr);
+	
+	for (int i = 0; i < flightBuffer.size(); i++)
+	{
+		tFStamp st = flightBuffer[i];
+		if (now - st.timestamp > FBUFFER_TIMEOUT)
+		{
+			flightBuffer.erase(flightBuffer.begin() + i);
+		}
+	}
+	
+	return 0;
+}
+	
+
+/**
+ * Function writes file based on object data in internal representation of format.
+ * If there is file on provided path, it will be overwritten!
+ * @param path - path to output file
+ * @return zero if success, nonzero otherwise
+ */
+int data::exportFile(std::string path)
+{
+	std::ofstream f;
+	f.open(path);
+	if (f.is_open())
+	{
+		timestamp = std::time(nullptr);
+		f << timestamp << '\n';
+		f << ref.lat << '\n';
+		f << ref.lon << '\n';
+		
+		// Iterate over 359 polarPlot positions
+		for (int i = 0; i < 360; i++)
+		{
+			tCoords p = polarRange[i];
+			char buf[32];
+			sprintf(buf, "%.4f|%.4f", polarRange[i].lat, polarRange[i].lon);
+			std::string outLine = buf;
+			f << outLine << '\n';
+		}
+		
+		// Delimiting newline
+		f << '\n';
+		
+		// Iterate over heatMap active points
+		std::map<int, int>::iterator heatMapIter;
+		for (heatMapIter = heatMap.begin(); heatMapIter != heatMap.end(); ++heatMapIter)
+		{
+			char buf[32];
+			sprintf(buf, "%d|%d", heatMapIter->first, heatMapIter->second);
+			std::string outLine = buf;
+			f << outLine << '\n';
+		}
+		
+		// Delimiting newline
+		f << '\n';
+		
+		// Iterate over company records
+		std::map<std::string, int>::iterator companyIter;
+		for (companyIter = companyPlot.begin(); companyIter != companyPlot.end(); ++companyIter)
+		{
+			char buf[32];
+			sprintf(buf, "%s|%d", (companyIter->first).c_str(), companyIter->second);
+			std::string outLine = buf;
+			f << outLine << '\n';
+		}
+		
+		// Delimiting newline
+		f << '\n';
+		
+		// Trailing $ - valid file
+		f << '$';
+		
+		// Close file
+		f.close();
+		
+		return 0;
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: Unable to open output file!\n");
+		return 1;
+	}
+}
+
+
+/**
+ * Function checks whether a pair hex-callsign stored in stamp is currently in flightBuffer.
+ * @param stamp - tFStamp containing pair of hex-callsign
+ * @return true if pair is currently in buffer, false otherwise
+ */
+bool data::isInFBuffer(tFStamp stamp)
+{
+	for (tFStamp st : flightBuffer)
+	{
+		if ((st.hex == stamp.hex) && (st.callsign == stamp.callsign))
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+ 
+ 
+ 
+/**
+ * Function interprets incoming message, extracts relevant data based on message type
+ * and fills apropriate object variables with this data.
+ * 
+ * Basestation SBS format message is basically single comma-separated-values (CSV) record.
+ * Basestation produces four different SBS message types. This type is determined by first field of csv record.
+ * Fields of which message consists are determined by this type.
+ * 
+ * ------------------------------
+ * -----NEW AIRCRAFT MESSAGE-----
+ * ------------------------------
+ * This message is broadcasted when SBS-1 picks up a signal for an aircraft that isn't currently tracking,
+ * i.e. it's when a new aircraft appers on the aircraft list. Structure of this type:
+ *
+ * 1  AIR
+ * 2  [null]
+ * 3  System-generated sessionID
+ * 4  System-generated aircraftID
+ * 5  ICAO24 hex ident
+ * 6  System generated flightID
+ * 7  Date message detected
+ * 8  Time message detected
+ * 9  Date message logged
+ * 10 Time message logged
+ * 
+ * 
+ * -------------------- 
+ * -----ID MESSAGE-----
+ * --------------------
+ * This message is broadcasted when a callsign is first received, or is changed.
+ * 
+ * 1  ID
+ * 2  [null]
+ * 3  System-generated sessionID
+ * 4  System-generated aircraftID
+ * 5  ICAO24 hex ident
+ * 6  System generated flightID
+ * 7  Date message detected
+ * 8  Time message detected
+ * 9  Date message logged
+ * 10 Time message logged
+ * 11 Callsign
+ * 
+ * 
+ * ----------------------------------
+ * -----SELECTION CHANGE MESSAGE-----
+ * ----------------------------------
+ * This is rather internal Basestation system message with no new information value.
+ * It is broadcasted when user changes the selection, or in special cases, it can be broadcasted,
+ * when new aircraft has been added (due to implementation).
+ * 
+ * 1  SEL
+ * 2  [null]
+ * 3  System-generated sessionID
+ * 4  System-generated aircraftID
+ * 5  ICAO24 hex ident
+ * 6  System generated flightID
+ * 7  Date message detected
+ * 8  Time message detected
+ * 9  Date message logged
+ * 10 Time message logged
+ * 11 Callsign
+ * 
+ * 
+ * ------------------------------
+ * -----TRANSMISSION MESSAGE-----
+ * ------------------------------
+ * Finally, most important message. It is basically rebroadcasting of every ADS-B message
+ * received from aircraft - in decoded format.
+ * This format is produced by most ADS-B decoders as text based decoded format. It is convenient
+ * to use Basestation format for further use, due to computational complexity of decoding raw bitwise
+ * ADS-B messages.
+ * 
+ * 1  MSG
+ * 2  Transmission Type
+ * 3  System generated sessionID
+ * 4  System generated aircraftID
+ * 5  ICAO24 hex ident
+ * 6  System generated flightID
+ * 7  Date message detected
+ * 8  Time message detected
+ * 9  Date message logged
+ * 10 Time message logged
+ * 11 Callsign
+ * 12 Altitude
+ * 13 Ground Speed
+ * 14 Track
+ * 15 Lat
+ * 16 Lon
+ * 17 Vertical speed
+ * 18 Squawk
+ * 19 Alert
+ * 20 Emergency
+ * 21 SPI
+ * 22 IsOnGround
+ * 
+ * Based on second field - Transmission Type, we can distinguish a few more transmission types,
+ * of which each sets different fields:
+ * 
+ * Transmission Type:
+ * 	1 = ID message ----------------------- (Callsign)
+ * 	2 = Surface position message --------- (Altitude, GroundSpeed, Track, Lat, Lon)
+ * 	3 = Airborne position message -------- (Altitude, Lat, Lon, Alert, Emergency, SPI)
+ * 	4 = Airborne velocity message -------- (GroundSpeed, Rate, VerticalSpeed)
+ * 	5 = Surveillance Altitude message ---- (Altitude, Alert, SPI)
+ * 	6 = Surveillance ID (Squawk) message - (Altitude, Squawk, Alert, Emergency, SPI)
+ * 	8 = Air-Call Reply / TCAS Acquisition Squitter (None)
+ * 
+ * 
+ * Dump1090 emulates Basestation message broadcast. It outputs only MSG (Transmission) messages,
+ * as it rebroadcasts decoded ADS-B messages and there is no need to emulate internal SBS messages.
+ * This function takes single transmission message and processes containing info for statistical purposes.
+ * 
+ * [ Thanks to Mr Dave Reid for comprehensive information on this topic ]
+ * 
+ * @param message - incoming message converted to std::string
+ * @return zero if success, nonzero otherwise
+ */
+int data::processMessage(std::string message)
+{
+	// Split message into individual csv fields
+	std::vector<std::string> fields = split(message, ',');
+	
+	
+	tFStamp stamp;
+	// Switch based on message type
+	switch (std::stoi(fields[1]))
+	{
+		case 1:
+			// ID message (hex+callsign available)
+			if ((fields[4] != "") && (fields[10] != ""))
+			{
+				stamp.hex = fields[4];
+				stamp.callsign = fields[10];
+				stamp.timestamp = std::time(nullptr);
+				
+				if (! isInFBuffer(stamp))
+				{
+					std::locale loc;
+					std::string company = stamp.callsign.substr(0,3);
+					if ((std::isalpha(company[0])) && (std::isalpha(company[1])) && (std::isalpha(company[2])) && (std::isdigit(stamp.callsign[3])))
+					{
+						if ( companyPlot.find(company) == companyPlot.end() )
+						{
+							companyPlot[company] = 1;
+						}
+						else
+						{
+							companyPlot[company]++;
+						}
+					}
+					
+					flightBuffer.push_back(stamp);
+				}
+			}
+			break;
+			
+		case 3:
+			// Airborne position message (Altitude+lat/lon available)
+			if ((fields[14] != "") && (fields[15] != ""))
+			{
+				tCoords mPos;
+				mPos.lat = std::stod(fields[14]);
+				mPos.lon = std::stod(fields[15]);
+			
+				int bearing = (int) round(getBearing(ref, mPos));
+				
+				double distance = getDistance(ref, mPos);
+				
+				tCoords maxPos = polarRange[bearing];
+				
+				double maxDistance = getDistance(ref, maxPos);
+				
+				if (distance > maxDistance)
+				{
+					polarRange[bearing] = mPos;
+				}
+				
+				char buf[32];
+				sprintf(buf, "%d%d", (int) round(mPos.lat * 100), (int) round(mPos.lon * 100));
+				std::string sIntPos = buf;
+				int intPos = std::stoi(sIntPos);
+				
+				if (heatMap.find(intPos) == heatMap.end())
+				{
+					heatMap[intPos] = 1;
+				}
+				else
+				{
+					heatMap[intPos]++;
+				}
+			}
+			break;
+	}
+	return 0;
+}
