@@ -3,16 +3,17 @@ PROJ=dumpStats
 CC=g++
 RM=rm -f
 LDFLAGS = -lm
+SRC=src/
 
 
 ${PROJ} : dumpStats.o objects.o
 	${CC} ${CFLAGS} dumpStats.o objects.o ${LDFLAGS} -o ${PROJ}
 
-objects.o : objects.cpp objects.H
-	${CC} ${CFLAGS} -c objects.cpp
+objects.o : ${SRC}objects.cpp ${SRC}objects.H
+	${CC} ${CFLAGS} -c ${SRC}objects.cpp
 	
-dumpStats.o : dumpStats.cpp objects.H
-	${CC} ${CFLAGS} -c dumpStats.cpp
+dumpStats.o : ${SRC}dumpStats.cpp ${SRC}objects.H
+	${CC} ${CFLAGS} -c ${SRC}dumpStats.cpp
 
 
 clean:
