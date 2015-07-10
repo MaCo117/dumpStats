@@ -48,7 +48,7 @@ void printHelp()
 std::string get_selfpath()
 {
     char buff[256];
-    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    ssize_t len = readlink("/proc/self/exe", buff, 255);
     if (len != -1)
     {
       buff[len] = '\0';
@@ -266,6 +266,9 @@ int main(int argc, char **argv)
 	{
 		std::string execDir = get_selfpath();
 		
+		execDir = execDir.substr(0, execDir.size() - 10);
+		
+				
 		logf.open(execDir + "/debug.log");
 		if (! logf.is_open())
 		{
@@ -273,7 +276,7 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 		
-		logf << "Arguments successfully parsed: ";
+		logf << "[ " << getNanoTime() << " ] Arguments successfully parsed: ";
 		if (convert)
 		{
 			logf << "convert mode, ";
@@ -317,7 +320,7 @@ int main(int argc, char **argv)
 	
 	if (logging)
 	{
-		logf << "Pipe created.\n";
+		logf << "[ " << getNanoTime() << " ] Pipe created.\n";
 	}
 	
 	
@@ -336,7 +339,7 @@ int main(int argc, char **argv)
 		
 		if (logging)
 		{
-			logf << "Created stats object.\n";
+			logf << "[ " << getNanoTime() << " ] Created stats object.\n";
 		}
 		
 		// Child - data processing
@@ -352,13 +355,12 @@ int main(int argc, char **argv)
 		// Read from pipe
 		char buffer[128];
 		int result;
-		while (!feof(stream))
+		if (logging)
 		{
-			if (logging)
-			{
-				logf << "Starting pipe reading..\n";
-			}
-			
+			logf << "[ " << getNanoTime() << " ] Starting pipe reading..\n";
+		}
+		while (!feof(stream))
+		{			
 			// get line from pipe
 			fgets(buffer, sizeof(buffer), stream);
 			
@@ -376,11 +378,11 @@ int main(int argc, char **argv)
 			{
 				if (result != 0)
 				{
-					logf << "Logged type " << result << " message at " << getNanoTime() << ".\n";
+					logf << "[ " << getNanoTime() << " ] Logged type " << result << " message.\n";
 				}
 				else
 				{
-					logf << "Discarded message at " << getNanoTime() << ".\n";
+					logf << "[ " << getNanoTime() << " ] Discarded message.\n";
 				}
 			}
 			
@@ -394,21 +396,21 @@ int main(int argc, char **argv)
 				{
 					if (result == 0)
 					{
-						logf << "File successfully written at " << getNanoTime() << ".\n";
+						logf << "[ " << getNanoTime() << " ] File successfully written.\n";
 					}
 				}
 	
 				result = stats.flushFBuffer();
 				if (logging)
 				{
-					logf << "FlightBuffer flushed ( " << result << " entries deleted ) at " << getNanoTime() << ".\n";
+					logf << "[ " << getNanoTime() << " ] FlightBuffer flushed ( " << result << " entries deleted ).\n";
 				}
 			}
 			
 		}
 		if (logging)
 		{
-			logf << "Stream ended at " << getNanoTime() << ".\nProgram is correctly ending.";
+			logf << "[ " << getNanoTime() << " ] Stream ended.\nProgram is correctly ending.";
 		}
 		fclose(stream);
 		return 0;
