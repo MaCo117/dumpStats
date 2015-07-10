@@ -313,10 +313,12 @@ std::time_t data::getUptime()
 
 /**
  * Function clears from flightBuffer entries older than 30 minutes.
+ * @return number of erased entries.
  */
 int data::flushFBuffer()
 {
 	std::time_t now = std::time(nullptr);
+	int counter = 0;
 	
 	for (int i = 0; i < flightBuffer.size(); i++)
 	{
@@ -324,10 +326,11 @@ int data::flushFBuffer()
 		if (now - st.timestamp > FBUFFER_TIMEOUT)
 		{
 			flightBuffer.erase(flightBuffer.begin() + i);
+			counter++;
 		}
 	}
 	
-	return 0;
+	return counter;
 }
 	
 
@@ -540,7 +543,7 @@ bool data::isInFBuffer(tFStamp stamp)
  * [ Thanks to Mr Dave Reid for comprehensive information on this topic ]
  * 
  * @param message - incoming message converted to std::string
- * @return zero if success, nonzero otherwise
+ * @return 1 or 3 based on type of processed message, zero for discarded message.
  */
 int data::processMessage(std::string message)
 {
@@ -579,6 +582,7 @@ int data::processMessage(std::string message)
 					flightBuffer.push_back(stamp);
 				}
 			}
+			return 1;
 			break;
 			
 		case 3:
@@ -616,6 +620,7 @@ int data::processMessage(std::string message)
 					heatMap[intPos]++;
 				}
 			}
+			return 3;
 			break;
 	}
 	return 0;

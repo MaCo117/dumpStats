@@ -35,12 +35,40 @@ void f_sigint_handler(int s)
 // Print help message
 void printHelp()
 {
-	std::cout << "\ncollect mode usage: dumpStats [-d] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
+	std::cout << "\ncollect mode usage: dumpStats [-d] [-l] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
 	std::cout << "optional arguments:\n -h    show this message and exit\n -d    display incoming messages (verbose)\n -p/-m specify initial receiver position at scratch start\n";
-	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n\n\n";
+	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n -l    enable logging debug information into logfile at executable directory(logfile can get quite big during long runtime)\n\n\n";
 	std::cout << "convert mode usage: dumpStats -c [OUT_DIR] FILE_PATH\n\n";
 	std::cout << "OUT_DIR - is a directory where JS files will be stored (current directory by default)\nFILE_PATH is path to load file\n";
 	return;
+}
+
+
+// Returns path of executable
+std::string get_selfpath()
+{
+    char buff[256];
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    if (len != -1)
+    {
+      buff[len] = '\0';
+      return std::string(buff);
+    }
+}
+
+
+// Returns formatted exact time
+std::string getNanoTime()
+{
+	timespec ts;
+	
+	char buffer[80];
+	char outBuf[128];
+	
+	clock_gettime(CLOCK_REALTIME, &ts);
+	strftime(buffer, 80, "%Y-%m-%d, %H:%M:%S", gmtime(&(ts.tv_sec)));
+	sprintf(outBuf, "%s.%Ld", buffer, ts.tv_nsec);
+	return std::string(outBuf);
 }
 
 
@@ -52,6 +80,7 @@ int main(int argc, char **argv)
 	bool scratch = false;
 	bool load = false;
 	bool convert = false;
+	bool logging = false;
 	double refLat;
 	double refLon;
 	std::string filePath;
@@ -61,23 +90,28 @@ int main(int argc, char **argv)
 	
 	bool dFlag = false;
 	bool pFlag = false;
-	char *pVal = nullptr;
+	char *pVal = nullptr;    /* handle error condition */
 	bool mFlag = false;
 	char *mVal = nullptr;
 	bool fFlag = false;
 	char *fVal = nullptr;
 	bool cFlag = false;
+	bool lFlag = false;
 	
 	int optIndex;
 	int c;
 	
-	while ((c = getopt(argc, argv, "hcdp:m:f:")) != -1)
+	while ((c = getopt(argc, argv, "hlcdp:m:f:")) != -1)
 	{
 		switch(c)
 		{
 			case 'h':
 				printHelp();
 				exit(1);
+			
+			case 'l':
+				lFlag = true;
+				break;
 				
 			case 'c':
 				cFlag = true;
@@ -127,7 +161,7 @@ int main(int argc, char **argv)
 	
 	if (cFlag)
 	{
-		if (pFlag || mFlag || fFlag || dFlag)
+		if (pFlag || mFlag || fFlag || dFlag || lFlag)
 		{
 			fprintf(stderr, "Invalid argument usage! Convert mode does not accept other options.\n");
 			exit(1);
@@ -176,6 +210,11 @@ int main(int argc, char **argv)
 			{
 				filePath = std::string("./stats.out");
 			}
+			
+			if (lFlag)
+			{
+				logging = true;
+			}
 		}
 		else
 		{
@@ -188,6 +227,11 @@ int main(int argc, char **argv)
 			{
 				load = true;
 				filePath = std::string(fVal);
+			}
+			
+			if (lFlag)
+			{
+				logging = true;
 			}
 		}
 		
@@ -209,17 +253,72 @@ int main(int argc, char **argv)
 	{
 		data stats = data(filePath);
 		
-		stats.createJS(jsDir);
+		if (stats.createJS(jsDir) == 0)
+		{
+			std::cout << "Converting successfull.\n";
+		}
 		
 		return 0;
 	}		
 	
-	
+	std::ofstream logf;
+	if (logging)
+	{
+		std::string execDir = get_selfpath();
+		
+		logf.open(execDir + "/debug.log");
+		if (! logf.is_open())
+		{
+			fprintf(stderr, "ERROR: Unable to open logfile!\n");
+			exit(1);
+		}
+		
+		logf << "Arguments successfully parsed: ";
+		if (convert)
+		{
+			logf << "convert mode, ";
+			if (jsDir != "")
+			{
+				logf << "script dir is " << jsDir;
+			}
+			
+			logf << ", loading from " << filePath;
+		}
+		else
+		{
+			logf << "collect mode, ";
+			if (load)
+			{
+				logf << "loading start from " << filePath;
+			}
+			else
+			{
+				logf << "scratch start at " << refLat << ", " << refLon;
+			}
+			
+			if (dFlag)
+			{
+				logf << ", display messages";
+			}
+			else
+			{
+				logf << ", no display";
+			}
+			
+			logf << ", listening at " << hostname << ":" << portStr << "\n";
+		}
+	}
+
 	
 	// array of file descriptors
 	int fds[2];
 	// Create a pipe - both ends of pipe in fds
 	pipe(fds);
+	
+	if (logging)
+	{
+		logf << "Pipe created.\n";
+	}
 	
 	
 	// Forking
@@ -235,6 +334,10 @@ int main(int argc, char **argv)
 		
 		data stats = load ? data(filePath) : data(refLat, refLon);
 		
+		if (logging)
+		{
+			logf << "Created stats object.\n";
+		}
 		
 		// Child - data processing
 		FILE* stream;
@@ -248,8 +351,14 @@ int main(int argc, char **argv)
 		
 		// Read from pipe
 		char buffer[128];
+		int result;
 		while (!feof(stream))
 		{
+			if (logging)
+			{
+				logf << "Starting pipe reading..\n";
+			}
+			
 			// get line from pipe
 			fgets(buffer, sizeof(buffer), stream);
 			
@@ -261,17 +370,45 @@ int main(int argc, char **argv)
 			}
 			
 			// process line
-			stats.processMessage(message);
+			result = stats.processMessage(message);
+			
+			if (logging)
+			{
+				if (result != 0)
+				{
+					logf << "Logged type " << result << " message at " << getNanoTime() << ".\n";
+				}
+				else
+				{
+					logf << "Discarded message at " << getNanoTime() << ".\n";
+				}
+			}
 			
 			// every 1 minute:
 			//	* write data to outfile
 			//	* clear old entries from flightBuffer
 			if ((std::time(nullptr) - stats.getUptime()) % 60 == 0)
 			{
-				stats.exportFile(filePath);
-				stats.flushFBuffer();
+				result = stats.exportFile(filePath);
+				if (logging)
+				{
+					if (result == 0)
+					{
+						logf << "File successfully written at " << getNanoTime() << ".\n";
+					}
+				}
+	
+				result = stats.flushFBuffer();
+				if (logging)
+				{
+					logf << "FlightBuffer flushed ( " << result << " entries deleted ) at " << getNanoTime() << ".\n";
+				}
 			}
 			
+		}
+		if (logging)
+		{
+			logf << "Stream ended at " << getNanoTime() << ".\nProgram is correctly ending.";
 		}
 		fclose(stream);
 		return 0;
