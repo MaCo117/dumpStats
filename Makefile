@@ -1,4 +1,4 @@
-CFLAGS=-std=c++11
+CFLAGS=-std=c++11 -lrt
 PROJ=dumpStats
 CC=g++
 RM=rm -f
