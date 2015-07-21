@@ -37,7 +37,7 @@ dumpStats -f myStats.out 127.0.0.1 30003
 
 (start from scratch, running on remote machine, SBS on 30003, display messages):
 ```
-dumpStats -d -p 48.9939 -m 18.0979 -f myStats.out 192.168.1.50 30003
+dumpStats -d -p 48.9966 -m 02.5513 -f myStats.out 192.168.1.29 30003
 ```
 
 Convert mode example: (load data from file, save JS files into subdir):
