@@ -359,6 +359,9 @@ int main(int argc, char **argv)
 		{
 			logf << "[ " << getNanoTime() << " ] Starting pipe reading..\n";
 		}
+		
+		int lastDiskOp;		// last disk operation in minutes (file write)
+		
 		while (!feof(stream))
 		{			
 			// get line from pipe
@@ -389,8 +392,9 @@ int main(int argc, char **argv)
 			// every 1 minute:
 			//	* write data to outfile
 			//	* clear old entries from flightBuffer
-			if ((std::time(nullptr) - stats.getUptime()) % 60 == 0)
+			if (((std::time(nullptr) - stats.getUptime()) % 60 == 0) && ((std::time(nullptr) / 60) != lastDiskOp))
 			{
+				lastDiskOp = std::time(nullptr) / 60;
 				result = stats.exportFile(filePath);
 				if (logging)
 				{
