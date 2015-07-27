@@ -247,13 +247,16 @@ int main(int argc, char **argv)
 		}
 	}
 	
+	std::string execDir = get_selfpath();
+		
+	execDir = execDir.substr(0, execDir.size() - 10);
 	
 	// Convert mode
 	if (convert)
 	{
 		data stats = data(filePath);
 		
-		if (stats.createJS(jsDir) == 0)
+		if (stats.createJS(jsDir, execDir) == 0)
 		{
 			std::cout << "Converting successfull.\n";
 		}
@@ -263,12 +266,7 @@ int main(int argc, char **argv)
 	
 	std::ofstream logf;
 	if (logging)
-	{
-		std::string execDir = get_selfpath();
-		
-		execDir = execDir.substr(0, execDir.size() - 10);
-		
-				
+	{				
 		logf.open(execDir + "/debug.log");
 		if (! logf.is_open())
 		{

@@ -118,6 +118,13 @@ class data
 	// Old records should be removed regularly (~30 mins?)
 	std::vector<tFStamp> flightBuffer;
 	
+	// Loaded iata-icao database
+	// Contains ICAO code, Airline name and country of origin, indexed by ICAO code
+	std::map<std::string, std::vector<std::string>> icaoIata;
+	
+	// Loads iata-icao database into object data
+	int loadIcaoIata(std::string path);
+	
 	// Check whether a pair hex-callsign in tFStamp stamp is currently in flightBuffer
 	bool isInFBuffer(tFStamp stamp);
 
@@ -150,7 +157,7 @@ class data
 		// Interface to get uptime value from object instance
 		std::time_t getUptime();
 		
-		// Function creates Javascript code using GoogleMaps API to display data
-		int createJS(std::string dir);
+		// Function creates Javascript code using GoogleMaps API and HighCharts API to display data
+		int createJS(std::string dir, std::string launchDir);
 		
 };

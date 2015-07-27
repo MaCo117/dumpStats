@@ -258,6 +258,8 @@ data::data(std::string path)
 		fprintf(stdout, "Loading successfull.\n");
 		return;
 	}
+	
+	
 }
 
 
@@ -629,12 +631,44 @@ int data::processMessage(std::string message)
 
 
 /**
+ * Function loads icao-iata database from external file into
+ * internal representation.
+ * Function fills instance data.
+ * @param path - path to icao-iata.db
+ * @return zero if success, nonzero otherwise
+ */
+int data::loadIcaoIata(std::string path)
+{
+	std::ifstream f(path);
+	if (!f)		// input stream creation failed
+	{
+		return 1;
+	}
+	
+	std::string line;
+	
+	while (std::getline(f, line))
+	{
+		std::vector<std::string> vec = split(line, '\t');
+		std::vector<std::string> vecc;
+		vecc.push_back(vec[2]);
+		vecc.push_back(vec[4]);
+		icaoIata[vec[1]] = vecc;
+	}
+	
+	return 0;
+}
+
+
+
+/**
  * Function converts instance data and produces files with
  * Javascript code using GoogleMaps API to display collected data.
  * @param dir - directory to create JS files
+ * @param launchDir - directory of executable
  * @return zero if success, nonzero otherwise
  */
-int data::createJS(std::string dir)
+int data::createJS(std::string dir, std::string launchDir)
 {
 	// Create rangePlot
 	std::ofstream f;
@@ -676,7 +710,6 @@ int data::createJS(std::string dir)
 	
 	
 	// Create heatMap
-	// Create rangePlot
 	fpath = dir + "/heatMap.js";
 	f.open(fpath);
 	if (f.is_open())
@@ -717,6 +750,57 @@ int data::createJS(std::string dir)
 		f << "    'rgba(63, 0, 91, 1)',\n    'rgba(127, 0, 63, 1)',\n    'rgba(191, 0, 31, 1)',\n    'rgba(255, 0, 0, 1)'\n  ]\n  heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);\n}\n\n";
 		f << "function changeRadius() {\n  heatmap.set('radius', heatmap.get('radius') ? null : 20);\n}\n\nfunction changeOpacity() {\n  heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);\n";
 		f << "}\n\nfunction mtypeHybrid() {\n	map.setMapTypeId(google.maps.MapTypeId.HYBRID);\n}\n\nfunction mtypeSat() {\n	map.setMapTypeId(google.maps.MapTypeId.SATELLITE);\n}google.maps.event.addDomListener(window, 'load', initialize);";
+		
+		f.close();
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: Unable to open output file!\n");
+		return 1;
+	}
+	
+	
+	//Create csv file for highcharts airline chart
+	fpath = dir + "/airline.csv";
+	f.open(fpath);
+	if (f.is_open())
+	{
+		f << "Airline,Share\n";
+		
+		if (loadIcaoIata(launchDir + "/data/iata-icao.db") != 0)
+		{
+			fprintf(stderr, "ERROR: Error while loading iata-icao database!\n");
+			return 1;
+		}
+			
+		int total = 0;
+		std::map<std::string, int>::iterator airlineIter;
+		for (airlineIter = companyPlot.begin(); airlineIter != companyPlot.end(); ++airlineIter)
+		{
+			total += airlineIter->second;
+		}
+		
+		for (airlineIter = companyPlot.begin(); airlineIter != companyPlot.end(); ++airlineIter)
+		{
+			std::string name;
+			if ( icaoIata.find(airlineIter->first) == icaoIata.end() )
+			{
+				continue;
+			}
+			else
+			{
+				std::vector<std::string> vec = icaoIata[airlineIter->first];
+				name = vec[0];
+			}
+			
+			f << name << "," << (std::round((double(airlineIter->second) / double(total)) * 10000.0 ) / 10000.0) * 100;
+			
+			if (++airlineIter != companyPlot.end())
+			{
+				f << "\n";
+			}
+			airlineIter--;
+		}
 		
 		f.close();
 	}
