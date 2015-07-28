@@ -6,7 +6,7 @@ Main features include:
 * Currently producing polar range plot, position heatmap with resolution ~0,75km, company (airline) diagram and altitude percentage diagram
 * Produces blocks of Javascript code to be used with GoogleMaps API, and csv data files to be used with HighCharts API
 
-In example/ directory you can find examples of how products of dumpStats can be used on website.
+In example/ directory you can find an example of how products of dumpStats can be used on website.
 
 ## Requirements
 Compilation requires g++ compiler capable of compiling c++11 (version 4.7 and higher).

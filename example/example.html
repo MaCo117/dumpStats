@@ -1,0 +1,179 @@
+<html>
+<head>
+<title>dumpStats example</title>
+</head>
+
+<!--Include Google Maps API-->
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true"></script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true&libraries=visualization"></script>
+
+<!--Include ajax jquery-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<!--Include generated js files-->
+<script src="polarPlot.js"></script>
+<script src="heatMap.js"></script>
+
+<!--Initialize HighCharts charts. Note that you must have HighCharts API installed in order to display HighCharts plots.-->
+<script type="text/javascript">
+	$(document).ready(function()
+	{
+		$.get('airline.csv', function(compCsv)
+		{
+			$('#airlineChart').highcharts(
+			{
+				chart:
+				{
+					plotBackgroundColor: null,
+					plotBorderWidth: null,
+					plotShadow: false,
+					type: 'pie'
+				},
+				
+				data:
+				{
+					csv: compCsv
+				},
+				
+				title:
+				{
+					text: 'Airline percentage chart'
+				},
+				
+				tooltip:
+				{
+					pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+				},
+				
+				plotOptions:
+				{
+					pie:
+					{
+						allowPointSelect: true,
+						cursor: 'pointer',
+						dataLabels:
+						{
+							enabled: true,
+							format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+							style:
+							{
+								color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+							}
+						}
+					}
+				},
+			});
+		});
+	});
+</script>
+
+
+<script type="text/javascript">
+	$(document).ready(function()
+	{
+		$.get('altitude.csv', function(altCsv)
+		{
+			$('#altitudeChart').highcharts(
+			{
+				chart:
+				{
+					type: 'spline'
+				},
+				
+				data:
+				{
+					csv: altCsv
+				},
+				
+				title:
+				{
+					text: 'Altitude chart'
+				},
+				
+				subtitle:
+				{
+					text: 'Shows altitude shares from position reports (altitude in feet)'
+				},
+				
+				tooltip:
+				{
+					valueSuffix: ' %',
+				},
+				
+				xAxis:
+				{
+					title:
+					{
+						text: 'Altitude (feet)'
+					},
+					
+					labels:
+					{
+						formatter: function ()
+						{
+							return this.value;
+						}
+					}
+				},
+				
+				yAxis:
+				{
+					title:
+					{
+						text: 'Percentage (%)'
+					}
+				},
+				
+				plotOptions:
+				{
+					spline:
+					{
+						lineWidth: 3,
+						pointInterval: 1000
+					}
+				},
+			});
+		});
+	});				
+</script>
+
+<!--Include HighCharts API-->
+<script src="highcharts.js"></script>
+<script src="exporting.js"></script>
+<script type="text/javascript" src="modules/data.js"></script>
+
+
+<body>
+<h2 style="font-family:Arial, Helvetica, sans-serif;margin-left:20px;margin-right:20px;">Range</h2>
+<p style="font-family:Arial, Helvetica, sans-serif;font-size:14px;margin-left:20px;margin-right:20px;">Following map shows measured polar range plot of ADS-B antenna.</p><br>
+<!--Create div containing first map. Divs are distinguished by id.-->
+<div style="border-style: solid; border-width: 1px; margin-left: 2%; width: 35%; height: 60%" id="polar-map-canvas"></div><br><br>
+
+<h2 style="font-family:Arial, Helvetica, sans-serif;margin-left:20px;margin-right:20px;">HeatMap</h2>
+<p style="font-family:Arial, Helvetica, sans-serif;font-size:14px;margin-left:20px;margin-right:20px;">Following map shows measured heat map of aircrafts' positions, in resolution cca 0.75km. You can adjust the map if you like.</p><br>
+<!--Create panel containing some buttons..-->
+<div id="panel"><center>
+      <button onclick="toggleHeatmap()">Toggle Heatmap</button>
+      <button onclick="changeGradient()">Change gradient</button>
+      <button onclick="changeRadius()">Change radius</button>
+      <button onclick="changeOpacity()">Change opacity</button>
+      <button onclick="mtypeHybrid()">Hybrid Map</button>
+      <button onclick="mtypeSat()">Satellite Map</button>
+      </center>
+    </div><br><br>
+    <!--Create div containing second map-->
+   <div style="border-style: solid; border-width: 1px; margin-left: 2%; width: 35%; height: 60%" id="map-canvas"></div>
+   
+   <br><br>
+   
+<h2 style="font-family:Arial, Helvetica, sans-serif;margin-left:20px;margin-right:20px;">Company Chart</h2>
+<p style="font-family:Arial, Helvetica, sans-serif;font-size:14px;margin-left:20px;margin-right:20px;">Following chart shows percentual shares of particular airlines.</p><br>
+<!--Create div containing first chart. Divs are distinguished by id.-->
+<div style="border-style: solid; border-width: 1px; margin-left: 2%; width: 35%; height: 60%" id="airlineChart"></div><br><br>
+
+<h2 style="font-family:Arial, Helvetica, sans-serif;margin-left:20px;margin-right:20px;">Altitude Chart</h2>
+<p style="font-family:Arial, Helvetica, sans-serif;font-size:14px;margin-left:20px;margin-right:20px;">Following chart shows percentual shares of altitudes in position reports.</p><br>
+<!--Another chart.-->
+<div style="border-style: solid; border-width: 1px; margin-left: 2%; width: 90%; height: 60%" id="altitudeChart"></div><br><br>
+</body>
+</html>
