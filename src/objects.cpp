@@ -218,6 +218,23 @@ data::data(std::string path)
 		formatError();
 	}
 	
+	// Load altPlot values (500 values)
+	for (int i = 0; i <= 500; i++)
+	{
+		if (! std::getline(f,line))
+		{
+			formatError();
+		}
+		altPlot.push_back(std::stoi(line));
+	}
+	
+	// Load delimiting blank line
+	if (! std::getline(f, line))
+	{
+		formatError();
+	}
+	
+	
 	// Load heatMap weighted points
 	while (std::getline(f, line))
 	{
@@ -287,6 +304,13 @@ data::data(double lat, double lon)
 		
 		polarRange.push_back(newPos);
 	}
+	
+	// Fill 500 altPlot values with zero.
+	for (int i = 0; i <= 500; i++)
+	{
+		altPlot.push_back(0);
+	}
+	
 	return;
 }
 
@@ -361,6 +385,15 @@ int data::exportFile(std::string path)
 			sprintf(buf, "%.4f|%.4f", polarRange[i].lat, polarRange[i].lon);
 			std::string outLine = buf;
 			f << outLine << '\n';
+		}
+		
+		// Delimiting newline
+		f << '\n';
+		
+		// Iterate over 500 altPlot altitude counts
+		for (int i = 0; i <= 500; i++)
+		{
+			f << altPlot[i] << '\n';
 		}
 		
 		// Delimiting newline
@@ -620,6 +653,14 @@ int data::processMessage(std::string message)
 				else
 				{
 					heatMap[intPos]++;
+				}
+			}
+			if (fields[11] != "")
+			{
+				int fl = std::stoi(fields[11]) / 100;	// Convert altitude to FL
+				if (fl <= 500)
+				{
+					altPlot[fl]++;
 				}
 			}
 			return 3;

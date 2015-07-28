@@ -115,6 +115,9 @@ class data
 	// Lists recorded companies (airlines) with number of caught aircrafts.
 	std::map<std::string, int> companyPlot;	
 	
+	// Altitude density plot - contains number of position reports for each FL in range from FL000 to FL500
+	std::vector<int> altPlot;
+	
 	// Buffer of last appearance of pair ICAO24 - Callsign. If pair is in buffer, company counter in company plot should not be increased, until the pair is removed from buffer.
 	// Old records should be removed regularly (~30 mins?)
 	std::vector<tFStamp> flightBuffer;
