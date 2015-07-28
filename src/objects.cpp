@@ -746,7 +746,7 @@ int data::createJS(std::string dir, std::string launchDir, int cThr)
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: Unable to open output file!\n");
+		fprintf(stderr, "ERROR: Unable to open output file: [%s]\n", fpath.c_str());
 		return 1;
 	}
 	
@@ -797,7 +797,7 @@ int data::createJS(std::string dir, std::string launchDir, int cThr)
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: Unable to open output file!\n");
+		fprintf(stderr, "ERROR: Unable to open output file: [%s]\n", fpath.c_str());
 		return 1;
 	}
 	
@@ -855,7 +855,38 @@ int data::createJS(std::string dir, std::string launchDir, int cThr)
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: Unable to open output file!\n");
+		fprintf(stderr, "ERROR: Unable to open output file: [%s]\n", fpath.c_str());
+		return 1;
+	}
+	
+	
+	// Create csv file for highcharts altitude plot
+	fpath = dir + "/altitude.csv";
+	f.open(fpath);
+	if (f.is_open())
+	{
+		f << "Altitude,Share\n";
+		
+		int total = 0;
+		for (int i = 0; i <= 500; i++)
+		{
+			total += altPlot[i];
+		}
+		
+		for (int i = 0; i <= 500; i++)
+		{
+			f << i*100 << "," << (std::round((double(altPlot[i]) / double(total)) * 10000.0 ) / 10000.0) * 100;
+			if (i != 500)
+			{
+				f << '\n';
+			}
+		}
+		
+		f.close();
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: Unable to open output file: [%s]\n", fpath.c_str());
 		return 1;
 	}
 	
