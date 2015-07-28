@@ -875,7 +875,7 @@ int data::createJS(std::string dir, std::string launchDir, int cThr)
 		
 		for (int i = 0; i <= 500; i++)
 		{
-			f << i*100 << "," << altPlot[i];
+			f << i*100 << "," << (std::round((double(altPlot[i]) / double(total)) * 10000.0 ) / 10000.0) * 100;
 			if (i != 500)
 			{
 				f << '\n';
