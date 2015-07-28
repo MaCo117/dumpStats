@@ -1,10 +1,12 @@
 # dumpStats
-DumpStats is a simple tool for collecting and processing statistical data from ADS-B decoder.
+DumpStats is a tool for collecting and processing statistical data from ADS-B decoder.
 Main features include:
 * Works with any ADS-B receiver capable of producing Basestation SBS formatted feed
 * Can run alongside receiver, or on completely different machine - data acquired via TCP sockets
-* Currently producing polar range plot, position heatmap with resolution ~0,75km and company (airline) diagram.
-* Produces blocks of Javascript code using GoogleMaps API
+* Currently producing polar range plot, position heatmap with resolution ~0,75km, company (airline) diagram and altitude percentage diagram
+* Produces blocks of Javascript code to be used with GoogleMaps API, and csv data files to be used with HighCharts API
+
+In example/ directory you can find examples of how products of dumpStats can be used on website.
 
 ## Requirements
 Compilation requires g++ compiler capable of compiling c++11 (version 4.7 and higher).
