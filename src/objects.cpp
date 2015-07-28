@@ -666,9 +666,10 @@ int data::loadIcaoIata(std::string path)
  * Javascript code using GoogleMaps API to display collected data.
  * @param dir - directory to create JS files
  * @param launchDir - directory of executable
+ * @param cThr - company treshold. If count of company is below or equal treshold, company will not appear in airline chart.
  * @return zero if success, nonzero otherwise
  */
-int data::createJS(std::string dir, std::string launchDir)
+int data::createJS(std::string dir, std::string launchDir, int cThr)
 {
 	// Create rangePlot
 	std::ofstream f;
@@ -793,13 +794,20 @@ int data::createJS(std::string dir, std::string launchDir)
 				name = vec[0];
 			}
 			
-			f << name << "," << (std::round((double(airlineIter->second) / double(total)) * 10000.0 ) / 10000.0) * 100;
-			
-			if (++airlineIter != companyPlot.end())
+			if (airlineIter->second > cThr)
 			{
-				f << "\n";
+				f << name << "," << (std::round((double(airlineIter->second) / double(total)) * 10000.0 ) / 10000.0) * 100;
+			
+				if (++airlineIter != companyPlot.end())
+				{
+					f << "\n";
+				}
+				airlineIter--;
 			}
-			airlineIter--;
+			else
+			{
+				continue;
+			}
 		}
 		
 		f.close();

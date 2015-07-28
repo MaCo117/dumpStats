@@ -38,8 +38,8 @@ void printHelp()
 	std::cout << "\ncollect mode usage: dumpStats [-d] [-l] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
 	std::cout << "optional arguments:\n -h    show this message and exit\n -d    display incoming messages (verbose)\n -p/-m specify initial receiver position at scratch start\n";
 	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n -l    enable logging debug information into logfile at executable directory(logfile can get quite big during long runtime)\n\n\n";
-	std::cout << "convert mode usage: dumpStats -c [OUT_DIR] FILE_PATH\n\n";
-	std::cout << "OUT_DIR - is a directory where JS files will be stored (current directory by default)\nFILE_PATH is path to load file\n";
+	std::cout << "convert mode usage: dumpStats -c [OUT_DIR] [-t TRESHOLD] FILE_PATH\n\n";
+	std::cout << "OUT_DIR   is a directory where JS files will be stored (current directory by default)\n -t       specify number of counts per company, below which (TRESHOLD included) company will not show in chart (useful for crowded chart)\nFILE_PATH is path to load file\n";
 	return;
 }
 
@@ -81,6 +81,7 @@ int main(int argc, char **argv)
 	bool load = false;
 	bool convert = false;
 	bool logging = false;
+	int comp_treshold = 0;
 	double refLat;
 	double refLon;
 	std::string filePath;
@@ -97,11 +98,13 @@ int main(int argc, char **argv)
 	char *fVal = nullptr;
 	bool cFlag = false;
 	bool lFlag = false;
+	bool tFlag = false;
+	char *tVal = nullptr;
 	
 	int optIndex;
 	int c;
 	
-	while ((c = getopt(argc, argv, "hlcdp:m:f:")) != -1)
+	while ((c = getopt(argc, argv, "hlcdp:m:f:t:")) != -1)
 	{
 		switch(c)
 		{
@@ -135,6 +138,11 @@ int main(int argc, char **argv)
 				fFlag = true;
 				fVal = optarg;
 				break;
+			
+			case 't':
+				tFlag = true;
+				tVal = optarg;
+				break;
 				
 			case '?':
 				if (optopt == 'c')
@@ -167,6 +175,15 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 		
+		if (tFlag)
+		{
+			comp_treshold = atoi(tVal);
+			if (comp_treshold == 0)
+			{
+				fprintf(stderr, "Invalid value of -t TRESHOLD parameter! (Zero is implicit and cannot be processed).\n");
+				exit(1);
+			}
+		}
 		if (nonOptions.size() == 2)
 		{
 			jsDir = std::string(nonOptions[0]);
@@ -256,7 +273,7 @@ int main(int argc, char **argv)
 	{
 		data stats = data(filePath);
 		
-		if (stats.createJS(jsDir, execDir) == 0)
+		if (stats.createJS(jsDir, execDir, comp_treshold) == 0)
 		{
 			std::cout << "Converting successfull.\n";
 		}

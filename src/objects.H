@@ -48,6 +48,7 @@
 
 #define EARTH_RADIUS 6378.137
 
+// Number of seconds a flight has to stay in flight buffer
 #define FBUFFER_TIMEOUT 1800
 
 
@@ -158,6 +159,6 @@ class data
 		std::time_t getUptime();
 		
 		// Function creates Javascript code using GoogleMaps API and HighCharts API to display data
-		int createJS(std::string dir, std::string launchDir);
+		int createJS(std::string dir, std::string launchDir, int cThr);
 		
 };
