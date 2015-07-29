@@ -35,9 +35,9 @@ void f_sigint_handler(int s)
 // Print help message
 void printHelp()
 {
-	std::cout << "\ncollect mode usage: dumpStats [-d] [-l] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
+	std::cout << "\ncollect mode usage: dumpStats [-d] [-l LOGFILE] [-p LAT] [-m LON] [-f FILE] IP PORT\n\n";
 	std::cout << "optional arguments:\n -h    show this message and exit\n -d    display incoming messages (verbose)\n -p/-m specify initial receiver position at scratch start\n";
-	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n -l    enable logging debug information into logfile at executable directory(logfile can get quite big during long runtime)\n\n\n";
+	std::cout << " -f    specify input/output file path in load mode and output file path in scratch mode\n -l    enable logging debug information into specified logfile (logfile can get quite big during long run)\n\n\n";
 	std::cout << "convert mode usage: dumpStats -c [OUT_DIR] [-t TRESHOLD] FILE_PATH\n\n";
 	std::cout << "OUT_DIR   is a directory where JS files will be stored (current directory by default)\n -t       specify number of counts per company, below which (TRESHOLD included) company will not show in chart (useful for crowded chart)\nFILE_PATH is path to load file\n";
 	return;
