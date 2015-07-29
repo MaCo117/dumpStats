@@ -88,6 +88,7 @@ int main(int argc, char **argv)
 	char *hostname;
 	char *portStr;
 	std::string jsDir;
+	std::string logFile;
 	
 	bool dFlag = false;
 	bool pFlag = false;
@@ -98,13 +99,14 @@ int main(int argc, char **argv)
 	char *fVal = nullptr;
 	bool cFlag = false;
 	bool lFlag = false;
+	char *lVal = nullptr;
 	bool tFlag = false;
 	char *tVal = nullptr;
 	
 	int optIndex;
 	int c;
 	
-	while ((c = getopt(argc, argv, "hlcdp:m:f:t:")) != -1)
+	while ((c = getopt(argc, argv, "hl:cdp:m:f:t:")) != -1)
 	{
 		switch(c)
 		{
@@ -114,6 +116,7 @@ int main(int argc, char **argv)
 			
 			case 'l':
 				lFlag = true;
+				lVal = optarg;
 				break;
 				
 			case 'c':
@@ -231,6 +234,7 @@ int main(int argc, char **argv)
 			if (lFlag)
 			{
 				logging = true;
+				logFile = std::string(lVal);
 			}
 		}
 		else
@@ -249,6 +253,7 @@ int main(int argc, char **argv)
 			if (lFlag)
 			{
 				logging = true;
+				logFile = std::string(lVal);
 			}
 		}
 		
@@ -284,7 +289,7 @@ int main(int argc, char **argv)
 	std::ofstream logf;
 	if (logging)
 	{				
-		logf.open(execDir + "/debug.log");
+		logf.open(logFile);
 		if (! logf.is_open())
 		{
 			fprintf(stderr, "ERROR: Unable to open logfile!\n");
